@@ -5,3 +5,8 @@ Overall Project Overview can be found here: [Project Overview](https://github.co
 
 Project Schedule: [Schedule](https://github.com/cu-ecen-5013/final-project-prayag2010/wiki/Final-Project-Assignment-Schedule)
 
+Team Members: 
+Rahul Ramaprasad
+Prayag Desai 
+Sharan Arumugam
+
