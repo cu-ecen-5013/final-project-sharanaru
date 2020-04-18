@@ -1,0 +1,35 @@
+#!/bin/bash
+FLOOR=1
+RANGE=20
+trial_number=0   #initialize
+until [ "$trial_number" -gt $FLOOR ]
+do
+  trial_number=$RANDOM
+  let "trial_number %= $RANGE"  # Scales $number down within $RANGE.
+done
+
+echo "tries $trial_number"
+flag_server_found=0
+for ((tries=1; tries<=trial_number; tries++))
+do
+	test=$(netstat -plnt | grep "9000" | wc --l)
+	echo $test
+	if [ $test != 0 ]
+	then
+		flag_server_found=1
+		test=$(netstat -plnt | grep 9000 | awk 'NR==1{ print $4}' | cut -d : -f1)
+		break
+	fi
+done
+
+if [ $flag_server_found == 1 ]
+then
+	./client $test
+
+else
+	./server -d
+fi
+
+
+
+

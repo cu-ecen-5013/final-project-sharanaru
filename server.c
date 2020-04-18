@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
             flag_sysexit=0;
             handle_sig(SIGTERM);
         }
-     printf("%s",recv_message);       
+     syslog(LOG_DEBUG,"%s\n",recv_message);       
     }
     return 0;
 
