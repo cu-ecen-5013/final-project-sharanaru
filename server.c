@@ -130,6 +130,7 @@ int main(int argc, char *argv[])
         char recv_message[30];
         int read_status;
         read_status=read(recv_socket,recv_message,100);
+	syslog(LOG_DEBUG,"Read %d bytes\n",read_status);
         if(strcmp(recv_message,"Close Server") == 0)
         {
             

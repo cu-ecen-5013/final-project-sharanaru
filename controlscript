@@ -24,9 +24,11 @@ done
 
 if [ $flag_server_found == 1 ]
 then
+	echo "Setup as Client"
 	./client $test
 
 else
+	echo "Starting server as daemon"
 	./server -d
 fi
 
