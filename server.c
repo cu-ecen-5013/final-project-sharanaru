@@ -9,6 +9,7 @@
 #include<stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mqueue.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdbool.h>
@@ -22,10 +23,11 @@
 #define PORTNO 9000
 #define USE_AESD_CHAR_DEVICE 1
 volatile int flag_sysexit=1;
-
+#define SNDRCV_MQ "/sensor_data"
 int socketfd;//socket parameters
-
-
+//msq queue parameters
+static mqd_t mymq;
+struct mq_attr mq_attr;
 
 //exit function
 void exit_cleanup()
@@ -79,7 +81,17 @@ void create_daemon()
     close(STDERR_FILENO);
 }
 
-
+int queue_init()
+{
+    mq_attr.mq_maxmsg = 1;
+    mq_attr.mq_msgsize = 10 * sizeof(char); //temporary length
+    mq_attr.mq_flags = 0;     
+    mymq = mq_open(SNDRCV_MQ, O_CREAT|O_RDWR, 0, &mq_attr);
+    if(mymq == (mqd_t)-1){
+        return -1;
+    }
+    return 0;
+}
 
  
 
@@ -93,7 +105,11 @@ int main(int argc, char *argv[])
     {
         create_daemon();
     }
-    
+    //setting up queue
+    if(queue_init() != 0){
+        syslog(LOG_ERR,"Queue setup failed\n");
+    }
+
     //setting up socket
     socklen_t  clientsize;
     struct sockaddr_in server,client;
@@ -127,10 +143,18 @@ int main(int argc, char *argv[])
         
         if(recv_socket < 0)
             syslog(LOG_ERR,"Failure in accept\n");
-        char recv_message[30];
+        char recv_message[30]={0};
+        recv_message[20]='\0';
         int read_status;
         read_status=read(recv_socket,recv_message,100);
-	syslog(LOG_DEBUG,"Read %d bytes\n",read_status);
+	    syslog(LOG_DEBUG,"Read %d bytes\n",read_status);
+        // mq_attr get_queue_params;
+        // mq_getattr(mymq,&get_queue_params);
+        // if(get_queue_params.mq_curmsgs == 0)
+        // {
+        // mq_send(mymq, recv_message, strlen(recv_message) , 30);
+        // }
+
         if(strcmp(recv_message,"Close Server") == 0)
         {
             
@@ -138,8 +162,12 @@ int main(int argc, char *argv[])
             flag_sysexit=0;
             handle_sig(SIGTERM);
         }
-     syslog(LOG_DEBUG,"%s\n",recv_message);       
+        
+     syslog(LOG_DEBUG,"%s\n",recv_message);
+     memset(recv_message,0,30);     
     }
+    
+    
     return 0;
 
 }

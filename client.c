@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   if(connect(socket_client, (struct sockaddr *) &server_details, addr_size) == -1){
     printf("Connect to server failed\n");
   }
-  char message[10];
+  char message[10]; 
   strcpy(message,"Hello");
   if(send(socket_client , message , strlen(message) , 0) < 0)
     {

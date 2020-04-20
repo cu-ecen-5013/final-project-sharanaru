@@ -12,17 +12,17 @@ echo "tries $trial_number"
 flag_server_found=0
 for ((tries=1; tries<=trial_number; tries++))
 do
-	test=$(netstat -plnt | grep "9000" | wc --l)
+	test=$(netstat -lt | grep "9000" | wc --l)
 	echo $test
-	if [ $test != 0 ]
+	if [ "$test" != 0 ]
 	then
 		flag_server_found=1
-		test=$(netstat -plnt | grep 9000 | awk 'NR==1{ print $4}' | cut -d : -f1)
+		test=$(netstat -l | grep 9000 | awk 'NR==1{ print $4}' | cut -d : -f1)
 		break
 	fi
 done
 
-if [ $flag_server_found == 1 ]
+if [ "$flag_server_found" == 1 ]
 then
 	echo "Setup as Client"
 	./client $test
