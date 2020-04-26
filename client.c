@@ -12,6 +12,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include "MadgwickAHRS.h"
 #include<syslog.h>
 #include <signal.h>
 #include <stdint.h>
