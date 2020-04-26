@@ -1,34 +1,36 @@
-#include <stdio.h>      /* for printf() and fprintf() */
-#include <sys/socket.h> /* for socket(), connect(), sendto(), and recvfrom() */
-#include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
-#include <stdlib.h>     /* for atoi() and exit() */
-#include <string.h>     /* for memset() */
-#include <unistd.h>     /* for close() */
-
-#define MAXRECVSTRING 255  /* Longest string to receive */
-
+ #include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include<stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <stdbool.h>
+#include <time.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include<syslog.h>
+#include <signal.h>
+#include <stdint.h>
+#define MAXRECVSTRING 30
+#define PORTNO 9000
 
 
 int main(int argc, char *argv[])
 {
-    int sock;                         /* Socket */
+  
+   int sock;                         /* Socket */
     struct sockaddr_in broadcastAddr; /* Broadcast Address */
-    unsigned short broadcastPort;     /* Port */
+    unsigned int broadcastPort;     /* Port */
     char recvString[MAXRECVSTRING+1]; /* Buffer for received string */
     int recvStringLen;                /* Length of received string */
-
-    if (argc != 2)    /* Test for correct number of arguments */
-    {
-        fprintf(stderr,"Usage: %s <Broadcast Port>\n", argv[0]);
-        exit(1);
-    }
-
-    broadcastPort = atoi(argv[1]);   /* First arg: broadcast port */
-
+    broadcastPort = 9010;   /* First arg: broadcast port */
     /* Create a best-effort datagram socket using UDP */
     if ((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         perror("socket() failed");
-
     /* Construct bind structure */
     memset(&broadcastAddr, 0, sizeof(broadcastAddr));   /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;                 /* Internet address family */
@@ -45,8 +47,29 @@ int main(int argc, char *argv[])
 
     recvString[recvStringLen] = '\0';
     printf("Received: %s\n", recvString);    /* Print the received string */
-    
-    close(sock);
-    exit(0);
+	int socket_client;
+	socket_client=socket(PF_INET,  SOCK_STREAM, 0);
+	if(socket_client <0)
+	perror("Socket setup");
+  	struct sockaddr_in server_details;   socklen_t addr_size;
+  	socket_client = socket(AF_INET, SOCK_STREAM, 0);
+  	server_details.sin_family = AF_INET; 
+   	server_details.sin_port = htons(PORTNO);
+   	server_details.sin_addr.s_addr = inet_addr(recvString);
+   	memset(server_details.sin_zero, '0', sizeof (server_details.sin_zero));
+   	addr_size = sizeof(server_details);
+   	
+   	if(connect(socket_client, (struct sockaddr *) &server_details, addr_size) == -1)
+   {
+     printf("Connect to server failed\n");
+   }
+   char message[10]; 
+   strcpy(message,"Hello");
+   if(write(socket_client , message , strlen(message) ) < 0)
+   {
+     printf("Send failed\n");
+   }
+  //shutdown(socket_client,SHUT_RDWR);
+    //Read the message from the server into the buffer
+    //Print the received message
 }
-
