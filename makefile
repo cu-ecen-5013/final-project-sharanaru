@@ -3,7 +3,7 @@ ifeq ($(CC),)
 endif
 
 ifeq ($(CFLAGS),)
-   	CFLAGS = -g -Wall -Werror
+   	CFLAGS = -g -Wall -Werror -I.
 endif
 
 ifeq ($(LDFLAGS),)
@@ -16,7 +16,7 @@ all:
 	$(CC) $(CFLAGS) client.c -o client $(LDFLAGS)
 	$(CC) $(CFLAGS) server.c -o server $(LDFLAGS)
 	$(CC) $(CFLAGS) server-test.c -o servertest
-	$(CC) $(CFLAGS) i2ctest.c -o sensor $(LDFLAGS)  
+	$(CC) $(CFLAGS) i2ctest.c MadgwickAHRS.c -o sensor $(LDFLAGS)  
 clean:
 	rm -f client
 	rm -f server

@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
   {
    char send_cmd[10]={0}; 
    int read_status=0;
-   while{send_cmd[read_status] != '\n'}{
+   while(send_cmd[read_status] != '\n'){
     read_status=read(socket_client,send_cmd+read_status,10);
    }
    send_cmd[read_status]='\0';
