@@ -7,14 +7,16 @@ ifeq ($(CFLAGS),)
 endif
 
 ifeq ($(LDFLAGS),)
-   	LDFLAGS = -lrt
+   	LDFLAGS = -lrt -pthread
 endif
 
 # first target all- default target. Calls native gcc compiler if Cross_COMPILE not described
 
 all:
 	$(CC) $(CFLAGS) client.c -o client $(LDFLAGS)
-	$(CC) $(CFLAGS) server.c -o server $(LDFLAGS) 
+	$(CC) $(CFLAGS) server.c -o server $(LDFLAGS)
+	$(CC) $(CFLAGS) server-test.c -o servertest  
 clean:
 	rm -f client
 	rm -f server
+	rm -f servertest

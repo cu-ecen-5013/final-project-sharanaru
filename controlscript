@@ -1,6 +1,6 @@
 #!/bin/bash
 FLOOR=1
-RANGE=20
+RANGE=5
 trial_number=0   #initialize
 until [ "$trial_number" -gt $FLOOR ]
 do
@@ -9,27 +9,34 @@ do
 done
 
 echo "tries $trial_number"
+server_address=0
 flag_server_found=0
+ip_subnet=$(ip ....)
 for ((tries=1; tries<=trial_number; tries++))
 do
-	test=$(netstat -lt | grep "9000" | wc --l)
-	echo $test
-	if [ "$test" != 0 ]
-	then
-		flag_server_found=1
-		test=$(netstat -l | grep 9000 | awk 'NR==1{ print $4}' | cut -d : -f1)
-		break
-	fi
+	for(hostno=0; hostno<255; hostno++)
+	do
+		./server-test "$ip_subnet.$hostno"
+		if[ "$1" == 0]
+		then
+			server_address="$ip_subnet.$hostno"
+			flag_server_found=1
+			break
+		fi
+	done
 done
+
+
 
 if [ "$flag_server_found" == 1 ]
 then
-	echo "Setup as Client"
-	./client $test
+	echo "Sensor-APP"
+	#./client $test
 
 else
 	echo "Starting server as daemon"
 	./server -d
+	echo LCD-APP
 fi
 
 
