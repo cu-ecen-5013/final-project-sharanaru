@@ -17,12 +17,23 @@
 #include <stdint.h>
 #define MAXRECVSTRING 30
 #define PORTNO 9000
+int operation_switch =1;
 
+void handle_sig(int sig)
+{
+    operation_switch=0;
+    if(sig == SIGINT)
+        syslog(LOG_DEBUG,"Caught SIGINT Signal exiting\n");
+    if(sig == SIGTERM)
+        syslog(LOG_DEBUG,"Caught SIGTERM Signal exiting\n");  
+}
 
 int main(int argc, char *argv[])
 {
-  
-   int sock;                         /* Socket */
+    signal(SIGTERM,handle_sig);
+    signal(SIGINT,handle_sig);
+  //Inital receive broadcast message - Setting up socket with broadcast permisson to receive
+    int sock;                         /* Socket */
     struct sockaddr_in broadcastAddr; /* Broadcast Address */
     unsigned int broadcastPort;     /* Port */
     char recvString[MAXRECVSTRING+1]; /* Buffer for received string */
@@ -32,6 +43,7 @@ int main(int argc, char *argv[])
     if ((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         perror("socket() failed");
     /* Construct bind structure */
+
     memset(&broadcastAddr, 0, sizeof(broadcastAddr));   /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;                 /* Internet address family */
     broadcastAddr.sin_addr.s_addr = htonl(INADDR_ANY);  /* Any incoming interface */
@@ -46,12 +58,18 @@ int main(int argc, char *argv[])
         perror("recvfrom() failed");
 
     recvString[recvStringLen] = '\0';
-    printf("Received: %s\n", recvString);    /* Print the received string */
-	int socket_client;
-	socket_client=socket(PF_INET,  SOCK_STREAM, 0);
-	if(socket_client <0)
-	perror("Socket setup");
-  	struct sockaddr_in server_details;   socklen_t addr_size;
+    //printf("Received: %s\n", recvString);    /* Print the received string */
+	  //Closing socket
+    shutdown(sock,SHUT_RDWR);
+    
+    //setting up TCP socket
+
+    int socket_client;
+	  socket_client=socket(PF_INET,  SOCK_STREAM, 0);
+	  if(socket_client <0)
+	   perror("Socket setup");
+  	struct sockaddr_in server_details;   
+    socklen_t addr_size;
   	socket_client = socket(AF_INET, SOCK_STREAM, 0);
   	server_details.sin_family = AF_INET; 
    	server_details.sin_port = htons(PORTNO);
@@ -63,12 +81,27 @@ int main(int argc, char *argv[])
    {
      printf("Connect to server failed\n");
    }
-   char message[10]; 
-   strcpy(message,"Hello");
-   if(write(socket_client , message , strlen(message) ) < 0)
-   {
-     printf("Send failed\n");
+   while(operation_switch)
+  {
+   char send_cmd[10]={0}; 
+   int read_status=0;
+   while{send_cmd[read_status] != '\n'}{
+    read_status=read(socket_client,send_cmd+read_status,10);
    }
+   send_cmd[read_status]='\0';
+   if(strcmp(send_cmd,"Send\n") == 0)
+   {
+      char * sensor_fusion_result = NULL;
+      sensor_fusion_result= (char *) malloc(100);
+      if(sensor_fusion_result == NULL)
+      {
+        syslog(LOG_DEBUG,"Malloc failed");
+      }
+
+      //Run sensor algorithm and then send sensor fusion commands
+      
+   }
+ }
   //shutdown(socket_client,SHUT_RDWR);
     //Read the message from the server into the buffer
     //Print the received message
