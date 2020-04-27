@@ -1,42 +1,48 @@
 #!/bin/bash
-FLOOR=1
-RANGE=5
-trial_number=0   #initialize
-until [ "$trial_number" -gt $FLOOR ]
-do
-  trial_number=$RANDOM
-  let "trial_number %= $RANGE"  # Scales $number down within $RANGE.
-done
-
-echo "tries $trial_number"
-server_address=0
-flag_server_found=0
-ip_subnet=$(ip ....)
-for ((tries=1; tries<=trial_number; tries++))
-do
-	for(hostno=0; hostno<255; hostno++)
-	do
-		./server-test "$ip_subnet.$hostno"
-		if[ "$1" == 0]
-		then
-			server_address="$ip_subnet.$hostno"
-			flag_server_found=1
-			break
-		fi
-	done
-done
 
 
+#FLOOR=1
+#RANGE=5
+#trial_number=0   #initialize
+#until [ "$trial_number" -gt $FLOOR ]
+#do
+#  trial_number=$RANDOM
+#  let "trial_number %= $RANGE"  # Scales $number down within $RANGE.
+#done
 
-if [ "$flag_server_found" == 1 ]
+#echo "tries $trial_number"
+
+#server_address=0
+#flag_server_found=0
+#temp way to choose client and server
+i2c_found=$(i2cdetect -y 1 | grep "68" | wc -l)
+ip_subnet=$(ip a | grep "wlan0" | grep "inet" | cut -d ' ' -f 6 | cut -d '/' -f 1)
+
+#for ((tries=1; tries<=trial_number; tries++))
+#do
+#	for(hostno=0; hostno<255; hostno++)
+#	do
+#		./server-test "$ip_subnet.$hostno"
+#		if[ "$1" == 0]
+#		then
+#			server_address="$ip_subnet.$hostno"
+#			flag_server_found=1
+#			break
+#		fi
+#	done
+#done
+
+
+
+if [ "$i2c_found" == 1 ]
 then
 	echo "Sensor-APP"
-	#./client $test
+	./client "$ip_subnet"
 
 else
 	echo "Starting server as daemon"
-	./server -d
-	echo LCD-APP
+	./server "$ip_subnet" -d
+	echo "server started"
 fi
 
 

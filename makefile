@@ -13,10 +13,9 @@ endif
 # first target all- default target. Calls native gcc compiler if Cross_COMPILE not described
 
 all:
-	$(CC) $(CFLAGS) client.c -o client $(LDFLAGS)
+	$(CC) $(CFLAGS) client.c MadgwickAHRS.c -o client $(LDFLAGS)
 	$(CC) $(CFLAGS) server.c -o server $(LDFLAGS)
-	$(CC) $(CFLAGS) server-test.c -o servertest
-	$(CC) $(CFLAGS) i2ctest.c MadgwickAHRS.c -o sensor $(LDFLAGS)  
+	$(CC) $(CFLAGS) server-test.c -o servertest 
 clean:
 	rm -f client
 	rm -f server
