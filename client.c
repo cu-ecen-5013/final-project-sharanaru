@@ -30,7 +30,6 @@ void handle_sig(int sig)
     syslog(LOG_DEBUG,"Caught SIGINT Signal exiting\n");
   if(sig == SIGTERM)
     syslog(LOG_DEBUG,"Caught SIGTERM Signal exiting\n");  
-	exit(0);
 }
 
 int main(int argc, char *argv[])
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
     perror("recvfrom() failed");
 
   recvString[recvStringLen] = '\0';
-  printf("Received: %s\n", recvString);    /* Print the received string */
+    //printf("Received: %s\n", recvString);    /* Print the received string */
 	  //Closing socket
   shutdown(sock,SHUT_RDWR);
 
@@ -126,9 +125,10 @@ while(operation_switch)
 {
  char send_cmd[10]={0}; 
  int read_status=0;
- read_status=read(socket_client,send_cmd,10);
+ while(send_cmd[read_status] != '\n'){
+  read_status=read(socket_client,send_cmd+read_status,10);
+}
 send_cmd[read_status]='\0';
-//printf("Received signal is %s",send_cmd);
 if(strcmp(send_cmd,"Send\n") == 0)
 {
   char * sensor_fusion_result = NULL;
@@ -140,7 +140,7 @@ if(strcmp(send_cmd,"Send\n") == 0)
   }
     //
     //Run sensor algorithm and then send sensor fusion commands
-   
+    
     buffer[0] = i2c_smbus_read_byte_data(file_i2c, 0x3B); // AccelerometerX High Byte
 		buffer[1] = i2c_smbus_read_byte_data(file_i2c, 0x3C); // AccelerometerX Low Byte
 		buffer[2] = i2c_smbus_read_byte_data(file_i2c, 0x3D); // AccelerometerY High Byte
@@ -182,6 +182,7 @@ if(strcmp(send_cmd,"Send\n") == 0)
 		ax = buffer[0] << 8 | buffer[1];
 		ay = buffer[2] << 8 | buffer[3];
 		az = buffer[4] << 8 | buffer[5];
+
 		/* Converting the gyroscope values into 16 bits */
 		gx = buffer[6] << 8 | buffer[7];
 		gy = buffer[8] << 8 | buffer[9];
@@ -192,12 +193,13 @@ if(strcmp(send_cmd,"Send\n") == 0)
 		my = buffer[14] << 8 | buffer[15];
 		mz = buffer[16] << 8 | buffer[17];
 		//printf("The magnetometer values are %d, %d, %d\n", mx, my,mz);
-    float roll=0,pitch=0,yaw=0;
-   MadgwickAHRSupdate((float)ax, (float)ay, (float)az, (float)gx, (float)gy, (float)gz, (float)mx, (float)my, (float)mz,&roll,&pitch,&yaw);
-    
-snprintf(sensor_fusion_result,33,"Yaw: %4d Pitch: %4d Roll: %4d",(int)yaw,(int)pitch,(int)roll); 
-    printf("Yaw: %f Pitch: %f Roll: %f\n",(yaw),(pitch),(roll));
-    if( write(socket_client,sensor_fusion_result,33) < 0){
+    float roll,pitch,yaw;
+		MadgwickAHRSupdate((float)ax, (float)ay, (float)az, (float)gx, (float)gy, (float)gz, (float)mx, (float)my, (float)mz, roll,pitch, yaw);
+    roll*=Convert_Degree;
+    pitch*=Convert_Degree;
+    yaw*=Convert_Degree;
+    snprintf(sensor_fusion_result,34,"Yaw: %4d Pitch: %4d Roll: %4d\n",(int)round(roll),(int)round(pitch),(int)round(yaw));
+    if( write(socket_client,sensor_fusion_result,strlen(sensor_fusion_result)) < 0){
       perror("Couldnt write sensor results to socket\n");
     }
     free(sensor_fusion_result);

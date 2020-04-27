@@ -41,16 +41,7 @@ int broadcast_flag=1;
 int recv_socket;
 //exit function
 
-void exit_cleanup()
-{
-    if(!flag_sysexit){
-        shutdown(socketfd,SHUT_RDWR);
-        //printf("Exiting\n");
-        closelog();
-        exit(0);
-    }
 
-}
 
 void handle_sig(int sig)
 {
@@ -59,11 +50,14 @@ void handle_sig(int sig)
         syslog(LOG_DEBUG,"Caught SIGINT Signal exiting\n");
     if(sig == SIGTERM)
         syslog(LOG_DEBUG,"Caught SIGTERM Signal exiting\n");
+    mq_unlink(QUEUE_NAME);
+    sem_unlink (SEM_MUTEX_NAME);
     
     shutdown(socketfd,SHUT_RDWR);
-
+   _exit(0);
     
 }
+
 // creating daemon process
 void get_broadcast(const char * ip_address,char * broadcast_adress)
 {  
@@ -242,24 +236,27 @@ int main(int argc, char *argv[])
 
     while(flag_sysexit)
     {
-        char recv_message[40]={0};
+        char recv_message[100]={0};
         int read_status=0;
         if (sem_wait (mutex_sem) == -1) 
         {
            perror ("sem_take Error"); 
            exit (1);
         }
-	   
+         printf("Acquired semaphore \n");	   
        //asking for new data from sensor fusion device
-       write(recv_socket,send_msg,strlen(send_msg));
+       if(write(recv_socket,send_msg,strlen(send_msg)) < 1){
+	perror("write failed:"); return -1;
+	}
        //using \n as terminating character
 
-       while(recv_message[read_status] != '\n')
-       {
-        read_status+=read(recv_socket,recv_message+read_status,10);
-       }
+//       while(recv_message[read_status] != '\n')
+  //     {
+        read_status+=read(recv_socket,recv_message+read_status,50);
+    //   }
  	//load string to msg_q
        recv_message[read_status]='\0';
+       printf("received message  was %s",recv_message);
 
        if (mq_send (qd_tx, recv_message, strlen(recv_message)+1, 0)   == -1) 
        {
