@@ -14,6 +14,7 @@
 
 #server_address=0
 #flag_server_found=0
+
 #temp way to choose client and server
 i2c_found=$(i2cdetect -y 1 | grep "68" | wc -l)
 ip_subnet=$(ip a | grep "wlan0" | grep "inet" | cut -d ' ' -f 6 | cut -d '/' -f 1)
@@ -37,12 +38,15 @@ ip_subnet=$(ip a | grep "wlan0" | grep "inet" | cut -d ' ' -f 6 | cut -d '/' -f 
 if [ "$i2c_found" == 1 ]
 then
 	echo "Sensor-APP"
-	./client "$ip_subnet"
+	client "$ip_subnet"
 
 else
 	echo "Starting server as daemon"
-	./server "$ip_subnet" -d
+	server "$ip_subnet" -d
 	echo "server started"
+	echo "starting LCD draw process"
+	rx -d
+	echo "Lcd draw Process Started"
 fi
 
 
