@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
             perror ("Server: Not able to send message to client");   
        }
 
-       memset(recv_message,0,30);   
+       memset(recv_message,0,40);   
     }
     //printf("Out of loop");
     return 0;
