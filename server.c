@@ -1,6 +1,8 @@
 //Program to set up a socket server at port 9000
 //referenced some functionalities from http://www.linuxhowtos.org/C_C++/socket.htm
 //referenced http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html for daemon creation
+//UDP server code from http://cs.ecs.baylor.edu/~donahoo/practical/CSockets/code/BroadcastSender.c
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -27,6 +29,7 @@
 volatile int flag_sysexit=1;
 #define SNDRCV_MQ "/sensor_data"
 int socketfd;//socket parameters
+
 //msq queue parameters
 #define QUEUE_NAME   "/mqueue"
 #define SEM_MUTEX_NAME "/sem-mutex"
@@ -35,11 +38,15 @@ int socketfd;//socket parameters
 #define MAX_MSG_SIZE 256
 #define MSG_BUFFER_SIZE MAX_MSG_SIZE + 10
 
+//Handle for common mutex
 sem_t *mutex_sem;
 
+//Flag to indicate if broadcast of Ipaddress has to occur
 int broadcast_flag=1;
+
+//TCP socket parameter
 int recv_socket;
-//exit function
+
 
 
 
@@ -50,6 +57,7 @@ void handle_sig(int sig)
         syslog(LOG_DEBUG,"Caught SIGINT Signal exiting\n");
     if(sig == SIGTERM)
         syslog(LOG_DEBUG,"Caught SIGTERM Signal exiting\n");
+    
     mq_unlink(QUEUE_NAME);
     sem_unlink (SEM_MUTEX_NAME);
     
@@ -58,7 +66,7 @@ void handle_sig(int sig)
     
 }
 
-// creating daemon process
+//Gets broadcast_address
 void get_broadcast(const char * ip_address,char * broadcast_adress)
 {  
     int no_dots=0;
@@ -84,8 +92,10 @@ void get_broadcast(const char * ip_address,char * broadcast_adress)
     printf("Broadcast address is %s\n",broadcast_adress);
 }
 
+//pointer to ensure access to runtime arg for threads
 char * runtime_input;
-    
+
+//THREAD running UDP broadcast    
 void *broadcast_server_address(void *arg)
 {
     printf("In thread\n" );
@@ -96,9 +106,9 @@ void *broadcast_server_address(void *arg)
     char *sendString;                 /* String to broadcast */
     int broadcastPermission;          /* Socket opt to set permission to broadcast */
     unsigned int sendStringLen;       /* Length of string to broadcast */
-    get_broadcast(runtime_input,broadcastIP);          /* First arg:  broadcast IP address */ 
-    broadcastPort = 9010;    /* Second arg:  broadcast port */
-    sendString = runtime_input;             /* Third arg:  string to broadcast - SERVER iP */
+    get_broadcast(runtime_input,broadcastIP);          /* broadcast IP address */ 
+    broadcastPort = 9010;    /*   broadcast port */
+    sendString = runtime_input;             /* Third arg:  string to broadcast - SERVER IP */
 
     /* Create socket for sending/receiving datagrams */
     if ((broadcast_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
@@ -112,7 +122,7 @@ void *broadcast_server_address(void *arg)
     }
 
 
-    /* Construct local address structure */
+    
     memset(&broadcastAddr, 0, sizeof(broadcastAddr));   /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;                 /* Internet address family */
     broadcastAddr.sin_addr.s_addr = inet_addr(broadcastIP);/* Broadcast IP address */
@@ -128,11 +138,12 @@ void *broadcast_server_address(void *arg)
 
         
      }
-     //printf("Out of thread\n");
+     
      return NULL;
-    /* NOT REACHED */
+    
  }
 
+//creates daemon
  void create_daemon()
  {
 
@@ -174,11 +185,12 @@ int main(int argc, char *argv[])
     {
         create_daemon();
     }
+
     //setting up broadcast thread
     pthread_t broadcast_thread;
     pthread_create(&broadcast_thread,NULL,broadcast_server_address,NULL);
     
-    //setting up socket
+    //setting up TCP socket
     socklen_t  clientsize;
     struct sockaddr_in server,client;
     server.sin_family=AF_INET;
@@ -208,12 +220,15 @@ int main(int argc, char *argv[])
 
     bzero((char *) &server, sizeof(server));
     printf("/n Waiting to accept\n");
+    
     recv_socket=accept(socketfd,(struct sockaddr *)&client, &clientsize);
     broadcast_flag=0;
+    
     syslog(LOG_DEBUG,"Accepted connection from %s\n",inet_ntoa(client.sin_addr));
     printf("Accepted connection from %s\n",inet_ntoa(client.sin_addr));
     pthread_join(broadcast_thread,NULL);
-    //setting up queue
+    
+    //setting up queue -Common parameters to other code
     mqd_t qd_tx;
     struct mq_attr attr;
     attr.mq_flags = 0;
@@ -228,7 +243,7 @@ int main(int argc, char *argv[])
 
     //opening named semaphore
     if ((mutex_sem = sem_open (SEM_MUTEX_NAME, O_CREAT, 0660, 0)) == SEM_FAILED) {
-        perror ("sem_open"); exit (1);
+        perror ("sem_open"); exit(1);
     }
 
     
@@ -246,17 +261,16 @@ int main(int argc, char *argv[])
          printf("Acquired semaphore \n");	   
        //asking for new data from sensor fusion device
        if(write(recv_socket,send_msg,strlen(send_msg)) < 1){
-	perror("write failed:"); return -1;
-	}
-       //using \n as terminating character
-
-//       while(recv_message[read_status] != '\n')
-  //     {
+	       perror("write failed:"); 
+           return -1;
+	    }
+    
         read_status+=read(recv_socket,recv_message+read_status,50);
-    //   }
- 	//load string to msg_q
+    
+ 	   //load string to msg_q
        recv_message[read_status]='\0';
-       printf("received message  was %s",recv_message);
+       
+       //printf("received message  was %s",recv_message);
 
        if (mq_send (qd_tx, recv_message, strlen(recv_message)+1, 0)   == -1) 
        {
@@ -265,6 +279,6 @@ int main(int argc, char *argv[])
 
        memset(recv_message,0,40);   
     }
-    //printf("Out of loop");
+    
     return 0;
 }
